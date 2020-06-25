@@ -5,24 +5,10 @@
 
         <script src="js/OrbitAndPanControls.js"></script>
         <script src="js/ColladaLoader.js"></script>
-
-        <!-- extras -->
-        <script src="js/base64binary.js" type="text/javascript"></script>
-
-        <script src="js/MIDI/AudioDetect.js" type="text/javascript"></script>
-        <script src="js/MIDI/LoadPlugin.js" type="text/javascript"></script>
-        <script src="js/MIDI/Plugin.js" type="text/javascript"></script>
-        <script src="js/MIDI/Player.js" type="text/javascript"></script>
-        <script src="js/MIDI/Loader.js" type="text/javascript"></script>
-
-        <script src="js/Window/DOMLoader.script.js" type="text/javascript"></script>
-
-        <!-- jasmid package -->
-        <script src="js/jasmid/stream.js"></script>
-        <script src="js/jasmid/midifile.js"></script>
-        <script src="js/jasmid/replayer.js"></script>
-
+        <script src="js/WidgetLoader.js"></script>
         <script type="text/javascript" src="js/dat.gui.js"></script>
+
+        <script type="text/javascript" src="js/midi.js"></script>
 
         <style>
             canvas
@@ -80,16 +66,20 @@
                 this.key_attack_time = 9.0;
                 this.key_max_rotation = 0.72;
                 this.octave = 2;
-                this.song = "game_of_thrones.mid";
+                this.song = "cruel_angel__s_thesis.mid";
                 this.noteOnColor = [ 255, 0, 0, 1.0 ];
                 this.play = function()
-                    {
-                        MIDI.Player.resume();
-                    };
+                {
+                    MIDI.Player.resume();
+                };
+                this.pause = function()
+                {
+                    MIDI.Player.pause();    
+                }
                 this.stop = function()
-                    {
-                        MIDI.Player.stop();
-                    }
+                {
+                    MIDI.Player.stop();
+                }
             };
             
 
@@ -110,6 +100,39 @@
             renderer.gammaInput = true;
             renderer.gammaOutput = true;
             renderer.physicallyBasedShading = true;
+
+            // Drag and drop midi file events
+            function preventDefaults (e) {
+                e.preventDefault()
+                e.stopPropagation()
+            }
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                renderer.domElement.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false)
+            })
+            renderer.domElement.addEventListener("drop", ev => {
+                let items = null;
+                if (ev.dataTransfer.items) {
+                    items = ev.dataTransfer.items;
+                } else {
+                    items = ev.dataTransfer.files;
+                }
+                // we only accept the first song(multi song with loading callback should be dealt with carefully)
+                if (items.length > 0) {
+                    let i = 0;
+                    // If dropped items aren't midi files, reject them
+                    if (items[i].kind === 'file' && items[i].type === 'audio/midi') {
+                        var file = items[i].getAsFile();
+                        let reader = new FileReader()
+                        reader.readAsDataURL(file)
+                        reader.onloadend = function() {
+                            MIDI.Player.stop();
+                            MIDI.Player.loadFile(reader.result, MIDI.Player.start);
+                        }
+                    }
+                }
+            })
 
             document.body.appendChild(renderer.domElement);
 
@@ -410,29 +433,30 @@
                     var song = gui.add(controls, 'song', songsToFiles);
                     var noteOnColorControl = gui.addColor(controls, 'noteOnColor');
                     noteOnColorControl.onChange(function(value)
-                                    {
-                                        noteOnColor = new THREE.Color().setRGB(controls.noteOnColor[0]/256.0, controls.noteOnColor[1]/256.0, controls.noteOnColor[2]/256.0);;
-                                    });
+                    {
+                        noteOnColor = new THREE.Color().setRGB(controls.noteOnColor[0]/256.0, controls.noteOnColor[1]/256.0, controls.noteOnColor[2]/256.0);;
+                    });
 
                     song.onChange(function(value)
-                                    {
-                                        MIDI.Player.stop();
-                                        MIDI.Player.loadFile("midi/" + value, MIDI.Player.start);
-                                    });
+                    {
+                        MIDI.Player.stop();
+                        MIDI.Player.loadFile("midi/" + value, MIDI.Player.start);
+                    });
 
                     // make sure to remove any key pressed when changing the octave
                     var octave = gui.add(controls, 'octave',0 , 4).step(1);
                     octave.onChange(function(value)
-                                    {
-                                        for (keyCode in keys_down)
-                                        {  
-                                            var note = keyCode_to_note(keyCode);
-                                            key_status(note, keyState.note_off);
-                                        }
-                                        
-                                    });
+                    {
+                        for (keyCode in keys_down)
+                        {  
+                            var note = keyCode_to_note(keyCode);
+                            key_status(note, keyState.note_off);
+                        }
+                        
+                    });
 
                     gui.add(controls, 'play');
+                    gui.add(controls, 'pause');
                     gui.add(controls, 'stop');
                 });                               
             };            
@@ -441,35 +465,14 @@
 
         </script>
 
-    <script src="http://www.google-analytics.com/urchin.js" type="text/javascript">
-    </script>
-    <script type="text/javascript">
-    _uacct = "UA-302418-4";
-    urchinTracker();
-    </script>
-
-    <script type="text/javascript">
-    var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-    document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
-    </script>
-    <script type="text/javascript">
-    try
-    {
-      var pageTracker = _gat._getTracker("UA-302418-4");
-      pageTracker._trackPageview();
-    }
-    catch(err)
-    {
-    }
-    </script>
-
     <div id="info">
-        <a href="http://threejs.org" target="_blank">three.js</a> - 3D Piano player demo<br />
-        Controls: Keyboard to play, Mouse to orbit<br/>
-        Uses <a href="http://mudcu.be/midi-js/" target="_blank">MIDI.js</a> Source code available on <a href="https://github.com/reality3d/3d-piano-player" target="_blank">Github</a><br/>
-        <a href="http://www.twitter.com/reality3d/" target="_blank">Borja Morales</a>
-		<a href="https://twitter.com/share" class="twitter-share-button" data-url="http://www.rgba.org/r3d/3d-piano-player/" data-via="reality3d">Tweet</a>
+        <p>Use keyboard to play, mouse to orbit</p>
+        <p>Drag and drop your own midi file here!</p>
+        <p>Toggle control panel by backspace</p>
+        <br/>
+        <p>Build with <a href="http://threejs.org" target="_blank">three.js</a>, <a href="http://mudcu.be/midi-js/" target="_blank">MIDI.js</a></p>
+        <p>Origin <a href="https://github.com/reality3d/3d-piano-player" target="_blank">source code</a> by Borja Morales</p>
+        <p>Forked by Komeiji Satori, <a href="https://github.com/KomeijiSatori/3d-piano-player" target="_blank">source code</a></p>
     </div>
-	<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>	
     </body>
 </html>
