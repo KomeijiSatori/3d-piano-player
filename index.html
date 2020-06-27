@@ -103,8 +103,8 @@
 
             // Drag and drop midi file events
             function preventDefaults (e) {
-                e.preventDefault()
-                e.stopPropagation()
+                e.preventDefault();
+                e.stopPropagation();
             }
 
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -122,13 +122,18 @@
                 if (items.length > 0) {
                     let i = 0;
                     // If dropped items aren't midi files, reject them
-                    if (items[i].kind === 'file' && items[i].type === 'audio/midi') {
+                    if (items[i].kind === 'file') {
                         var file = items[i].getAsFile();
-                        let reader = new FileReader()
-                        reader.readAsDataURL(file)
+                        let reader = new FileReader();
+                        reader.readAsDataURL(file);
                         reader.onloadend = function() {
                             MIDI.Player.stop();
-                            MIDI.Player.loadFile(reader.result, MIDI.Player.start);
+                            // In Windows, the type may not be recognized correctly, thus leave this to MIDI.js
+                            try {
+                                MIDI.Player.loadFile(reader.result, MIDI.Player.start);
+                            } catch (e) {
+                                console.log(e);
+                            }
                         }
                     }
                 }
