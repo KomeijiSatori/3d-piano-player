@@ -361,7 +361,7 @@
                         keys_down[ev.keyCode] = true;                     
 
                         var delay = 0; // play one note every quarter second
-                        var note = parseInt(note.substr(1))+21; // the MIDI note
+                        var note = parseInt(note.substr(1)) + 24; // the MIDI note
                         var velocity = 127; // how hard the note hits
                         MIDI.setVolume(0, 127);   
                         MIDI.noteOn(0, note, velocity, delay);                        
@@ -378,7 +378,7 @@
                     keys_down[ev.keyCode] = false;
 
                     var delay = 0; // play one note every quarter second
-                    var note = parseInt(note.substr(1))+21;
+                    var note = parseInt(note.substr(1)) + 24;
                     var velocity = 127;// how hard the note hits
                     MIDI.setVolume(0, 127);
                     MIDI.noteOff(0, note, delay + 0.08);
